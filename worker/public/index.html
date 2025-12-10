@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AUTOTRADER – Saída Posicional</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: #021727;
+        color: #ffffff;
+      }
+
+      .topbar {
+        width: 100%;
+        padding: 16px 40px;
+        border-bottom: 1px solid #0f314a;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .logo {
+        font-size: 28px;
+        font-weight: bold;
+        color: #ff7b1a;
+      }
+
+      .tabs {
+        list-style: none;
+        display: flex;
+        gap: 24px;
+      }
+
+      .tabs li a {
+        text-decoration: none;
+        color: #ffffff;
+        font-size: 14px;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+
+      .tabs li.active a {
+        background-color: #ff7b1a;
+        color: #021727;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+
+      .card {
+        background-color: #031f34;
+        border-radius: 8px;
+        padding: 16px 20px 20px 20px;
+        box-shadow: 0 0 18px rgba(0, 0, 0, 0.5);
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .card-title {
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .card-subtitle {
+        font-size: 11px;
+        color: #bbbbbb;
+        margin-top: 4px;
+      }
+
+      .badge-online {
+        background-color: #19b36b;
+        color: #021727;
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 999px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 12px;
+      }
+
+      thead {
+        background-color: #041c30;
+      }
+
+      thead th {
+        padding: 6px 4px;
+        text-align: left;
+        color: #ff7b1a;
+        border-bottom: 1px solid #0f314a;
+        white-space: nowrap;
+      }
+
+      tbody td {
+        padding: 6px 4px;
+        border-bottom: 1px solid #0f314a;
+        white-space: nowrap;
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: #052339;
+      }
+
+      tbody tr:nth-child(odd) {
+        background-color: #031f34;
+      }
+
+      .text-center {
+        text-align: center;
+      }
+
+      .side-long {
+        color: #00ff7f;
+        font-weight: bold;
+      }
+
+      .side-short {
+        color: #ff4d4d;
+        font-weight: bold;
+      }
+
+      .situacao-aberta {
+        color: #19b36b;
+      }
+
+      .situacao-fechada {
+        color: #ff4d4d;
+      }
+
+      .footer-row {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        font-size: 11px;
+        color: #bbbbbb;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- TOPO / ABAS -->
+    <header class="topbar">
+      <div class="logo">AUTOTRADER</div>
+      <nav>
+        <ul class="tabs">
+          <!-- Ajuste as portas se quiser depois -->
+          <li><a href="http://34.9.232.253:8080/">E-mail</a></li>
+          <li><a href="http://34.9.232.253:8081/">Moedas</a></li>
+          <li><a href="http://34.9.232.253:8082/">Entrada</a></li>
+          <li class="active"><a href="http://34.9.232.253:8083/">Saída</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="container">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              Monitoramento de Saída – Modo Posicional
+            </div>
+            <div class="card-subtitle">
+              Fonte: <strong>saida_posicional.json</strong> (modo POSICIONAL do
+              Autotrader). Esta tela mostra apenas operações em acompanhamento.
+            </div>
+          </div>
+          <span class="badge-online">Automação conectada</span>
+        </div>
+
+        <!-- TABELA -->
+        <table>
+          <thead>
+            <tr>
+              <th>PAR</th>
+              <th>SIDE</th>
+              <th>MODO</th>
+              <th>ENTRADA</th>
+              <th>PREÇO</th>
+              <th>GANHO REAL</th>
+              <th>ALVO 1</th>
+              <th>GANHO 1</th>
+              <th>ALVO 2</th>
+              <th>GANHO 2</th>
+              <th>ALVO 3</th>
+              <th>GANHO 3</th>
+              <th>SITUAÇÃO</th>
+              <th>ALAV</th>
+              <th>DATA</th>
+              <th>HORA</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-saida">
+            <tr>
+              <td colspan="16" class="text-center">
+                Carregando dados...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- RODAPÉ -->
+        <div class="footer-row">
+          <div>
+            Última atualização:
+            <span id="ultima-atualizacao">--</span>
+          </div>
+          <div>Atualização automática a cada 60 segundos</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- SCRIPT -->
+    <script>
+      async function carregarSaida() {
+        try {
+          const resp = await fetch("/api/saida-posicional");
+          const dados = await resp.json();
+          renderTabela(dados);
+          atualizarRodape(dados);
+        } catch (err) {
+          console.error("Erro ao carregar saída:", err);
+          const tbody = document.getElementById("tbody-saida");
+          tbody.innerHTML = "";
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 16;
+          td.textContent = "Erro ao carregar dados.";
+          td.className = "text-center";
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+        }
+      }
+
+      function renderTabela(dados) {
+        const tbody = document.getElementById("tbody-saida");
+        tbody.innerHTML = "";
+
+        if (!dados || !dados.posicional || dados.posicional.length === 0) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 16;
+          td.textContent = "Nenhuma operação aberta no momento.";
+          td.className = "text-center";
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+          return;
+        }
+
+        dados.posicional.forEach((op) => {
+          const tr = document.createElement("tr");
+
+          const entrada = Number(op.entrada || 0);
+          const preco = Number(op.preco || 0);
+
+          // GANHO REAL (%) – sem mostrar o símbolo
+          let ganhoReal = 0;
+          if (entrada > 0 && preco > 0) {
+            if (op.side === "LONG") {
+              ganhoReal = ((preco - entrada) / entrada) * 100;
+            } else if (op.side === "SHORT") {
+              ganhoReal = ((entrada - preco) / entrada) * 100;
+            }
+          }
+
+          function tdTexto(texto, classe) {
+            const td = document.createElement("td");
+            td.textContent = texto;
+            if (classe) td.className = classe;
+            return td;
+          }
+
+          // PAR
+          tr.appendChild(tdTexto(op.par || ""));
+
+          // SIDE com cor
+          const sideClass =
+            op.side === "LONG"
+              ? "side-long"
+              : op.side === "SHORT"
+              ? "side-short"
+              : "";
+          tr.appendChild(tdTexto(op.side || "", sideClass));
+
+          // MODO
+          tr.appendChild(tdTexto(op.modo || ""));
+
+          // ENTRADA / PREÇO
+          tr.appendChild(
+            tdTexto(entrada ? entrada.toFixed(3) : "")
+          );
+          tr.appendChild(
+            tdTexto(preco ? preco.toFixed(3) : "")
+          );
+
+          // GANHO REAL (sem o símbolo %)
+          tr.appendChild(
+            tdTexto(ganhoReal ? ganhoReal.toFixed(2) : "")
+          );
+
+          // ALVOS e GANHOS (sem "US" e sem "%")
+          tr.appendChild(
+            tdTexto(
+              op.alvo1 != null && op.alvo1 !== ""
+                ? Number(op.alvo1).toFixed(3)
+                : ""
+            )
+          );
+          tr.appendChild(
+            tdTexto(
+              op.ganho1 != null && op.ganho1 !== ""
+                ? Number(op.ganho1).toFixed(2)
+                : ""
+            )
+          );
+          tr.appendChild(
+            tdTexto(
+              op.alvo2 != null && op.alvo2 !== ""
+                ? Number(op.alvo2).toFixed(3)
+                : ""
+            )
+          );
+          tr.appendChild(
+            tdTexto(
+              op.ganho2 != null && op.ganho2 !== ""
+                ? Number(op.ganho2).toFixed(2)
+                : ""
+            )
+          );
+          tr.appendChild(
+            tdTexto(
+              op.alvo3 != null && op.alvo3 !== ""
+                ? Number(op.alvo3).toFixed(3)
+                : ""
+            )
+          );
+          tr.appendChild(
+            tdTexto(
+              op.ganho3 != null && op.ganho3 !== ""
+                ? Number(op.ganho3).toFixed(2)
+                : ""
+            )
+          );
+
+          // SITUAÇÃO (cor opcional)
+          const sitClass =
+            op.situacao && op.situacao.toUpperCase() === "ABERTA"
+              ? "situacao-aberta"
+              : op.situacao && op.situacao.toUpperCase() === "FECHADA"
+              ? "situacao-fechada"
+              : "";
+          tr.appendChild(tdTexto(op.situacao || "", sitClass));
+
+          // ALAV / DATA / HORA
+          tr.appendChild(
+            tdTexto(
+              op.alav != null && op.alav !== "" ? String(op.alav) : ""
+            )
+          );
+          tr.appendChild(tdTexto(op.data || ""));
+          tr.appendChild(tdTexto(op.hora || ""));
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      function atualizarRodape(dados) {
+        const spanUltima = document.getElementById("ultima-atualizacao");
+        if (spanUltima && dados && dados.ultima_atualizacao) {
+          spanUltima.textContent = dados.ultima_atualizacao;
+        }
+      }
+
+      // primeira carga + loop de 60s
+      carregarSaida();
+      setInterval(carregarSaida, 60000);
+    </script>
+  </body>
+</html>

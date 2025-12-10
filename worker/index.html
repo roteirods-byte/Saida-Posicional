@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Autotrader – Saída Posicional</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background-color: #02121f; /* azul escuro */
+      color: #ffffff;
+    }
+
+    header {
+      padding: 20px 40px;
+      border-bottom: 1px solid #102336;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+      color: #ff8c32; /* abóbora */
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      font-size: 13px;
+      color: #cccccc;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 30px auto 60px auto;
+      background-color: #031929;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+      padding: 20px 24px 28px 24px;
+    }
+
+    .container-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ff8c32;
+      margin-bottom: 4px;
+    }
+
+    .container-subtitle {
+      font-size: 11px;
+      color: #bbbbbb;
+      margin-bottom: 14px;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 11px;
+      color: #bbbbbb;
+    }
+
+    .badge-online {
+      background-color: #0a7c3b;
+      color: #ffffff;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    thead {
+      background-color: #061f33;
+    }
+
+    thead th {
+      padding: 6px 4px;
+      text-align: center;
+      color: #ff8c32;
+      border-bottom: 1px solid #16324a;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #102336;
+    }
+
+    tbody td {
+      padding: 6px 4px;
+      text-align: center;
+      color: #ffffff;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #041523;
+    }
+
+    .side-long {
+      color: #00d26a;
+      font-weight: bold;
+    }
+
+    .side-short {
+      color: #ff4a4a;
+      font-weight: bold;
+    }
+
+    .ganho-pos {
+      color: #00d26a;
+      font-weight: bold;
+    }
+
+    .ganho-neg {
+      color: #ff4a4a;
+      font-weight: bold;
+    }
+
+    .btn-excluir {
+      background-color: #ff4a4a;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: default; /* ainda não exclui de verdade */
+    }
+
+    .empty-row td {
+      padding: 18px 4px;
+      font-size: 13px;
+      color: #bbbbbb;
+      text-align: center;
+    }
+
+    .footer-info {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #888888;
+    }
+
+    .footer-info span {
+      font-weight: bold;
+      color: #ff8c32;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">AUTOTRADER</div>
+    <div class="subtitle">
+      Painel MFE Saída Posicional – Monitoramento automático das operações abertas
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="container-title">Monitoramento de Saída</div>
+    <div class="container-subtitle">
+      Fonte: <span>saida_posicional.json</span> (modo POSICIONAL do Autotrader)
+    </div>
+
+    <div class="status-bar">
+      <div>
+        Última atualização: <span id="ultima-atualizacao">–</span>
+      </div>
+      <div class="badge-online" id="badge-status">
+        Automação conectada
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>PAR</th>
+          <th>SIDE</th>
+          <th>MODO</th>
+          <th>ENTRADA</th>
+          <th>PREÇO</th>
+          <th>ALVO 1 US</th>
+          <th>GANHO 1%</th>
+          <th>ALVO 2 US</th>
+          <th>GANHO 2%</th>
+          <th>ALVO 3 US</th>
+          <th>GANHO 3%</th>
+          <th>SITUAÇÃO</th>
+          <th>ALAV</th>
+          <th>DATA</th>
+          <th>HORA</th>
+          <th>EXCLUIR</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-saida">
+        <tr class="empty-row">
+          <td colspan="16">Nenhuma operação aberta no momento.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footer-info">
+      Atualizado via <span>API /api/saida-posicional</span> – Modo POSICIONAL (1D)
+    </div>
+  </main>
+
+  <script>
+    async function carregarSaida() {
+      const tbody = document.getElementById("tbody-saida");
+      const spanUltima = document.getElementById("ultima-atualizacao");
+      const badge = document.getElementById("badge-status");
+
+      try {
+        const resp = await fetch("/api/saida-posicional?ts=" + Date.now());
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const data = await resp.json();
+
+        const lista = Array.isArray(data.posicional) ? data.posicional : [];
+        const ultima = data.ultima_atualizacao || "–";
+
+        spanUltima.textContent = ultima;
+        badge.textContent = "Automação conectada";
+        badge.style.backgroundColor = "#0a7c3b";
+
+        if (lista.length === 0) {
+          tbody.innerHTML = `
+            <tr class="empty-row">
+              <td colspan="16">Nenhuma operação aberta no momento.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = "";
+
+        lista.forEach((op) => {
+          const tr = document.createElement("tr");
+
+          const side = (op.side || "").toUpperCase();
+          const modo = op.modo || "POSICIONAL";
+
+          const preco = op.preco_atual ?? op.preco ?? 0;
+          const entrada = op.entrada ?? 0;
+
+          const alvo1 = op.alvo_1_us ?? op.alvo1_us ?? op.alvo_1 ?? 0;
+          const alvo2 = op.alvo_2_us ?? op.alvo2_us ?? op.alvo_2 ?? 0;
+          const alvo3 = op.alvo_3_us ?? op.alvo3_us ?? op.alvo_3 ?? 0;
+
+          const g1 = op.ganho_1_pct ?? op.ganho1_pct ?? 0;
+          const g2 = op.ganho_2_pct ?? op.ganho2_pct ?? 0;
+          const g3 = op.ganho_3_pct ?? op.ganho3_pct ?? 0;
+
+          const situacao = op.situacao || "ABERTA";
+          const alav = op.alavancagem ?? op.alav ?? "";
+          const dataOp = op.data || "";
+          const horaOp = op.hora || "";
+
+          function fmtPreco(v) {
+            const n = Number(v);
+            if (!isFinite(n)) return "-";
+            return n.toFixed(3);
+          }
+
+          function fmtPct(v) {
+            const n = Number(v);
+            if (!isFinite(n)) return "0.00 %";
+            const sinal = n >= 0 ? "+" : "";
+            return `${sinal}${n.toFixed(2)} %`;
+          }
+
+          function classGanho(v) {
+            const n = Number(v);
+            return n >= 0 ? "ganho-pos" : "ganho-neg";
+          }
+
+          tr.innerHTML = `
+            <td>${op.par || "-"}</td>
+            <td class="${side === "LONG" ? "side-long" : side === "SHORT" ? "side-short" : ""}">
+              ${side || "-"}
+            </td>
+            <td>${modo}</td>
+            <td>${fmtPreco(entrada)}</td>
+            <td>${fmtPreco(preco)}</td>
+            <td>${fmtPreco(alvo1)}</td>
+            <td class="${classGanho(g1)}">${fmtPct(g1)}</td>
+            <td>${fmtPreco(alvo2)}</td>
+            <td class="${classGanho(g2)}">${fmtPct(g2)}</td>
+            <td>${fmtPreco(alvo3)}</td>
+            <td class="${classGanho(g3)}">${fmtPct(g3)}</td>
+            <td>${situacao}</td>
+            <td>${alav}</td>
+            <td>${dataOp}</td>
+            <td>${horaOp}</td>
+            <td><button class="btn-excluir" disabled>Excluir</button></td>
+          `;
+
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Erro ao carregar saída:", err);
+        badge.textContent = "Falha na conexão";
+        badge.style.backgroundColor = "#b02a2a";
+
+        tbody.innerHTML = `
+          <tr class="empty-row">
+            <td colspan="16">Erro ao carregar dados da automação.</td>
+          </tr>
+        `;
+      }
+    }
+
+    // Carrega na entrada da página
+    carregarSaida();
+    // Atualiza a cada 30 segundos
+    setInterval(carregarSaida, 30000);
+  </script>
+</body>
+</html>

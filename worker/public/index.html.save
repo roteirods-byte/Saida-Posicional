@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>AUTOTRADER – Painel Saída Posicional</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #001826;
+      color: #ffffff;
+    }
+    header {
+      padding: 16px 32px;
+      border-bottom: 1px solid #123447;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+      color: #ffa500;
+    }
+    .nav {
+      margin-top: 8px;
+      display: flex;
+      gap: 24px;
+      font-size: 14px;
+    }
+    .nav span {
+      cursor: default;
+      color: #aaa;
+    }
+    .nav .ativo {
+      color: #ffffff;
+      border-bottom: 2px solid #ffa500;
+      padding-bottom: 4px;
+    }
+    main {
+      padding: 32px;
+      display: flex;
+      justify-content: center;
+    }
+    .card {
+      background-color: #021f33;
+      padding: 16px 24px;
+      border-radius: 8px;
+      min-width: 900px;
+      max-width: 1200px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.6);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .badge {
+      background-color: #0d7a32;
+      color: #fff;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+    .sub {
+      font-size: 11px;
+      color: #cccccc;
+      margin-bottom: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 6px 4px;
+      text-align: center;
+    }
+    thead th {
+      background-color: #00263f;
+      color: #ffa500;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:nth-child(even) {
+      background-color: #03192a;
+    }
+    tbody tr:nth-child(odd) {
+      background-color: #021321;
+    }
+    .side-long {
+      color: #00ff66;
+      font-weight: bold;
+    }
+    .side-short {
+      color: #ff4444;
+      font-weight: bold;
+    }
+    .positivo {
+      color: #00ff66;
+      font-weight: bold;
+    }
+    .negativo {
+      color: #ff4444;
+      font-weight: bold;
+    }
+    .status-aberta {
+      color: #00ff66;
+      font-weight: bold;
+    }
+    .status-fechada {
+      color: #ff4444;
+      font-weight: bold;
+    }
+    .footer-info {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #bbbbbb;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">AUTOTRADER</div>
+    <div class="nav">
+      <span>E-mail</span>
+      <span>Moedas</span>
+      <span>Entrada</span>
+      <span class="ativo">Saída</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Monitoramento de Saída – Modo Posicional</div>
+        <div class="badge" id="badge-status">Automação conectada</div>
+      </div>
+      <div class="sub">
+        Fonte: <strong>saida_posicional.json</strong> (modo POSICIONAL do Autotrader).
+        Esta tela mostra apenas operações em acompanhamento.
+      </div>
+
+      <table>
+<thead>
+  <tr>
+    <th>PAR</th>
+    <th>SIDE</th>
+    <th>MODO</th>
+    <th>ENTRADA</th>
+    <th>PREÇO</th>
+    <th>GANHO REAL</th>
+    <th>ALVO 1</th>
+    <th>GANHO 1</th>
+    <th>ALVO 2</th>
+    <th>GANHO 2</th>
+    <th>ALVO 3</th>
+    <th>GANHO 3</th>
+    <th>SITUAÇÃO</th>
+    <th>ALAV</th>
+    <th>DATA</th>
+    <th>HORA</th>
+  </tr>
+</thead>
+<tbody id="tbody-saida"></tbody
+>          <tr>
+            <td colspan="15">Carregando...</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="footer-info">
+        <span id="ultima-atualizacao">Última atualização: --</span>
+        <span>Atualização automática a cada 60 segundos</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function formatNumero(valor, casas) {
+      if (valor === null || valor === undefined || valor === "") return "-";
+      const num = Number(valor);
+      if (isNaN(num)) return String(valor);
+      return num.toFixed(casas);
+    }
+
+    function formatPercent(valor) {
+      if (valor === null || valor === undefined || valor === "") return "-";
+      const num = Number(valor);
+      if (isNaN(num)) return String(valor);
+      const sinal = num > 0 ? "+" : "";
+      return sinal + num.toFixed(2) + " %";
+    }
+
+    async function carregarSaida() {
+      const tbody = document.getElementById("saida-tbody");
+      try {
+        const resp = await fetch("/api/saida-posicional");
+        if (!resp.ok) {
+          tbody.innerHTML = '<tr><td colspan="15">Erro ao carregar dados (' + resp.status + ')</td></tr>';
+          return;
+        }
+
+        const dados = await resp.json();
+        const lista = Array.isArray(dados.posicional) ? dados.posicional : [];
+
+        tbody.innerHTML = "";
+
+        if (lista.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="15">Nenhuma operação aberta no momento.</td></tr>';
+        } else {
+          for (const op of lista) {
+            const tr = document.createElement("tr");
+
+            const ganho1 = Number(op.ganho1_pct || op.ganho1 || 0);
+            const ganho2 = Number(op.ganho2_pct || op.ganho2 || 0);
+            const ganho3 = Number(op.ganho3_pct || op.ganho3 || 0);
+
+            tr.innerHTML = `
+              <td>${op.par || "-"}</td>
+              <td class="${(op.side || "").toUpperCase() === "LONG" ? "side-long" : "side-short"}">
+                ${(op.side || "").toUpperCase()}
+              </td>
+              <td>${op.modo || "-"}</td>
+              <td>${formatNumero(op.entrada, 3)}</td>
+              <td>${formatNumero(op.preco_atual || op.preco, 3)}</td>
+              <td>${formatNumero(op.alvo1_us, 3)}</td>
+              <td class="${ganho1 >= 0 ? "positivo" : "negativo"}">${formatPercent(ganho1)}</td>
+              <td>${formatNumero(op.alvo2_us, 3)}</td>
+              <td class="${ganho2 >= 0 ? "positivo" : "negativo"}">${formatPercent(ganho2)}</td>
+              <td>${formatNumero(op.alvo3_us, 3)}</td>
+              <td class="${ganho3 >= 0 ? "positivo" : "negativo"}">${formatPercent(ganho3)}</td>
+              <td class="${(op.situacao || "").toUpperCase() === "ABERTA" ? "status-aberta" : "status-fechada"}">
+                ${(op.situacao || "-").toUpperCase()}
+              </td>
+              <td>${op.alav || "-"}</td>
+              <td>${op.data || "-"}</td>
+              <td>${op.hora || "-"}</td>
+            `;
+            tbody.appendChild(tr);
+          }
+        }
+
+        const ultima = dados.ultima_atualizacao || "--";
+        document.getElementById("ultima-atualizacao").textContent =
+          "Última atualização: " + ultima;
+        document.getElementById("badge-status").textContent = "Automação conectada";
+      } catch (e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="15">Erro ao carregar dados (falha de rede)</td></tr>';
+        document.getElementById("badge-status").textContent = "Erro de conexão";
+      }
+    }
+
+    carregarSaida();
+    setInterval(carregarSaida, 60000);
+  </script>
+</body>
+</html>
